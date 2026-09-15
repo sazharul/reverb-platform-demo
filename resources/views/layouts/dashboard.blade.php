@@ -121,6 +121,10 @@
 
         {{-- Page content --}}
         <main class="flex-1 overflow-y-auto p-6">
+            <div class="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+                <strong>Portfolio demo</strong> — Independent showcase for hiring. Not affiliated with any client or live product. Fictional data only.
+                <a href="https://azharulislamsohan.com/legal" class="underline ml-1 text-amber-200 hover:text-white" target="_blank" rel="noreferrer">Legal notice</a>
+            </div>
 
             {{-- Flash messages --}}
             @if(session('success'))

@@ -16,10 +16,10 @@ test('a user can register and create an app with credentials', function () {
     $registerResponse->assertRedirect(route('dashboard'));
 
     $createResponse = $this->post(route('user.apps.store'), [
-        'name' => 'Enorsia',
+        'name' => 'PulseWire Storefront',
         'description' => 'Realtime events app',
         'default_channel_type' => 'private',
-        'allowed_origins' => "https://enorsia.com\nhttps://app.enorsia.com",
+        'allowed_origins' => "https://pulsewire.demo\nhttps://app.pulsewire.demo",
         'max_connections' => 500,
     ]);
 

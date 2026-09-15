@@ -16,7 +16,7 @@
 
                 <div>
                     <label for="name" class="label">App Name</label>
-                    <input id="name" name="name" type="text" class="input @error('name') input-error @enderror" value="{{ old('name') }}" placeholder="e.g. Enorsia Storefront" required>
+                    <input id="name" name="name" type="text" class="input @error('name') input-error @enderror" value="{{ old('name') }}" placeholder="e.g. PulseWire Storefront" required>
                     @error('name') <p class="field-error">{{ $message }}</p> @enderror
                 </div>
 
