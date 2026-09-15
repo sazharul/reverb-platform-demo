@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Listener — Reverb</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{colors:{brand:{'50':'#eff6ff','100':'#dbeafe','500':'#3b82f6','600':'#2563eb','700':'#1d4ed8','900':'#1e3a5f'}}}}}</script>
+</head>
+<body class="bg-neutral-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-white border-b border-neutral-200">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728M8.464 15.536a5 5 0 010-7.072"/></svg>
+            </div>
+            <h1 class="text-lg font-bold text-neutral-900">Event Listener</h1>
+            <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">WebSocket</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/reverb-broadcaster.html" class="text-xs text-neutral-600 hover:text-brand-600 font-medium">← Broadcaster</a>
+            <a href="/reverb-dashboard.html" class="text-xs text-neutral-600 hover:text-brand-600 font-medium ml-3">Dashboard →</a>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-4xl mx-auto px-4 py-6 space-y-5">
+
+    <!-- Connection Settings -->
+    <div class="bg-white rounded-xl border border-neutral-200 p-5">
+        <h2 class="text-sm font-semibold text-neutral-900 mb-4">WebSocket Connection</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">App Key</label>
+                <input id="appKey" placeholder="Your app key" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Reverb Host</label>
+                <input id="host" value="localhost" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Reverb Port</label>
+                <input id="port" value="8080" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Channel</label>
+                <input id="channel" value="orders" placeholder="e.g. orders, private-orders" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-green-500 outline-none">
+                <p class="text-xs text-neutral-400 mt-1">Use <code class="bg-neutral-100 px-1 rounded">private-</code> prefix for private channels</p>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Sanctum Token <span class="text-neutral-400">(required for private channels)</span></label>
+                <input id="token" type="password" placeholder="Bearer token" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Laravel URL <span class="text-neutral-400">(for auth)</span></label>
+                <input id="serverUrl" value="http://localhost:8000" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white rounded-xl border border-neutral-200 p-5">
+        <div class="flex items-center gap-3 flex-wrap">
+            <button id="connectBtn" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Connect
+            </button>
+            <button id="disconnectBtn" disabled class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition disabled:opacity-40">Disconnect</button>
+            <button id="clearBtn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-lg transition">Clear Events</button>
+
+            <div class="ml-auto flex items-center gap-3">
+                <span id="status" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                    Disconnected
+                </span>
+                <span id="eventCount" class="text-xs text-neutral-400">0 events</span>
+            </div>
+        </div>
+        <p id="wsUrl" class="text-xs text-neutral-400 mt-3 font-mono"></p>
+    </div>
+
+    <!-- Token Helper -->
+    <details class="bg-white rounded-xl border border-neutral-200">
+        <summary class="p-4 cursor-pointer text-sm font-semibold text-neutral-700 hover:text-neutral-900">🔑 Token Generator (Optional)</summary>
+        <div class="px-5 pb-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Email</label>
+                <input id="authEmail" placeholder="you@example.com" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Password</label>
+                <input id="authPass" type="password" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none">
+            </div>
+            <div class="flex items-end gap-2">
+                <button id="getTokenBtn" class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">Get Token</button>
+                <button id="copyTokenBtn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-3 py-2 rounded-lg transition">Copy</button>
+            </div>
+        </div>
+        <p id="tokenMsg" class="px-5 pb-4 text-xs text-neutral-500"></p>
+    </details>
+
+    <!-- Live Events -->
+    <div class="bg-white rounded-xl border border-neutral-200 p-5">
+        <h2 class="text-sm font-semibold text-neutral-900 mb-4">Live Events</h2>
+        <div id="events" class="space-y-3 max-h-[500px] overflow-y-auto">
+            <p class="text-xs text-neutral-400 text-center py-8">Connect to a channel to see events in real time</p>
+        </div>
+    </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const KEYS = ['appKey','host','port','channel','token','serverUrl','authEmail'];
+let socket = null, socketId = null, evtCount = 0;
+
+KEYS.forEach(k => { const v=localStorage.getItem('l-'+k); if(v&&$(k)) $(k).value=v; });
+
+function setStatus(on, text) {
+    $('status').className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${on?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`;
+    $('status').innerHTML = `<span class="w-2 h-2 rounded-full ${on?'bg-green-500':'bg-red-500'}"></span>${text}`;
+}
+
+function addEvent(type, channel, eventName, data) {
+    const e=$('events');
+    if(!evtCount) e.innerHTML='';
+    const isSystem = type==='system';
+    const d=document.createElement('div');
+    d.className = `rounded-lg border p-3 ${isSystem?'border-neutral-200 bg-neutral-50':'border-brand-200 bg-brand-50'}`;
+    d.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+                ${isSystem?'<span class="text-xs font-bold text-neutral-500 bg-neutral-200 px-2 py-0.5 rounded">SYSTEM</span>':'<span class="text-xs font-bold text-brand-700 bg-brand-100 px-2 py-0.5 rounded">EVENT</span>'}
+                <code class="text-xs font-semibold">${eventName}</code>
+            </div>
+            <span class="text-xs text-neutral-400">${new Date().toLocaleTimeString()}</span>
+        </div>
+        <div class="flex items-center gap-2 mb-2">
+            <span class="text-xs bg-neutral-200 text-neutral-700 px-2 py-0.5 rounded font-mono">${channel}</span>
+        </div>
+        <pre class="text-xs bg-white rounded border border-neutral-200 p-2 overflow-x-auto">${JSON.stringify(data,null,2)}</pre>
+    `;
+    e.prepend(d);
+    evtCount++;
+    $('eventCount').textContent=evtCount+' event'+(evtCount>1?'s':'');
+}
+
+async function privateAuth(channelName) {
+    const r = await fetch($('serverUrl').value.replace(/\/$/,'')+'/api/v1/reverb/auth', {
+        method:'POST',
+        headers:{'Accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+$('token').value.trim(),'X-Requested-With':'XMLHttpRequest'},
+        body:JSON.stringify({app_key:$('appKey').value.trim(),socket_id:socketId,channel_name:channelName})
+    });
+    if(!r.ok) throw new Error('Auth failed: '+(await r.text()));
+    return r.json();
+}
+
+async function subscribe() {
+    const ch = $('channel').value.trim();
+    if(ch.startsWith('private-')) {
+        if(!$('token').value.trim()) throw new Error('Sanctum token required for private channels');
+        const auth = await privateAuth(ch);
+        socket.send(JSON.stringify({event:'pusher:subscribe',data:{channel:ch,auth:auth.auth}}));
+        addEvent('system',ch,'pusher:subscribe',{info:'Private channel subscription requested'});
+    } else {
+        socket.send(JSON.stringify({event:'pusher:subscribe',data:{channel:ch}}));
+        addEvent('system',ch,'pusher:subscribe',{info:'Public channel subscription requested'});
+    }
+}
+
+$('connectBtn').onclick = () => {
+    const wsUrl = 'ws://'+$('host').value.trim()+':'+$('port').value.trim()+'/app/'+$('appKey').value.trim();
+    $('wsUrl').textContent = wsUrl;
+    socket = new WebSocket(wsUrl);
+    $('connectBtn').disabled=true;
+    setStatus(false,'Connecting…');
+
+    socket.onopen = () => {
+        setStatus(true,'Connected');
+        $('disconnectBtn').disabled=false;
+        KEYS.forEach(k=>$(k)&&localStorage.setItem('l-'+k,$(k).value));
+    };
+
+    socket.onmessage = async ev => {
+        try {
+            const msg = JSON.parse(ev.data);
+            if(msg.event==='pusher:connection_established') {
+                const d = typeof msg.data==='string'?JSON.parse(msg.data):msg.data;
+                socketId = d.socket_id;
+                addEvent('system','—','connection_established',{socket_id:socketId});
+                await subscribe();
+                return;
+            }
+            if(msg.event==='pusher_internal:subscription_succeeded'||msg.event==='pusher:subscription_succeeded') {
+                addEvent('system',msg.channel||'—','subscription_succeeded',msg);
+                return;
+            }
+            if(msg.event && !msg.event.startsWith('pusher')) {
+                const data = typeof msg.data==='string'?(()=>{try{return JSON.parse(msg.data)}catch(_){return msg.data}})():msg.data;
+                addEvent('event',msg.channel||'unknown',msg.event,data);
+            }
+        } catch(err) {
+            addEvent('system','—','parse_error',{error:err.message,raw:ev.data});
+        }
+    };
+
+    socket.onclose = () => { setStatus(false,'Disconnected'); $('connectBtn').disabled=false; $('disconnectBtn').disabled=true; };
+    socket.onerror = () => { setStatus(false,'Error'); };
+};
+
+$('disconnectBtn').onclick = () => { if(socket) socket.close(); };
+$('clearBtn').onclick = () => { $('events').innerHTML='<p class="text-xs text-neutral-400 text-center py-8">Connect to a channel to see events in real time</p>'; evtCount=0; $('eventCount').textContent='0 events'; };
+
+$('getTokenBtn').onclick = async () => {
+    try {
+        const r = await fetch($('serverUrl').value.replace(/\/$/,'')+'/api/v1/auth/token',{
+            method:'POST', headers:{'Accept':'application/json','Content-Type':'application/json'},
+            body:JSON.stringify({email:$('authEmail').value.trim(),password:$('authPass').value,token_name:'reverb-listener-tool'})
+        });
+        const d = await r.json();
+        if(!r.ok) throw new Error(d.message||JSON.stringify(d));
+        $('token').value = d.token;
+        $('tokenMsg').textContent = '✓ Token generated and applied.';
+    } catch(e) { $('tokenMsg').textContent = '✗ '+e.message; }
+};
+
+$('copyTokenBtn').onclick = async () => {
+    if(!$('token').value.trim()) { $('tokenMsg').textContent='No token to copy'; return; }
+    await navigator.clipboard.writeText($('token').value.trim());
+    $('tokenMsg').textContent='✓ Token copied to clipboard';
+};
+</script>
+</body>
+</html>

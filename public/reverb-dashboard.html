@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverb Testing Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>tailwind.config={theme:{extend:{colors:{brand:{'50':'#eff6ff','100':'#dbeafe','500':'#3b82f6','600':'#2563eb','700':'#1d4ed8','900':'#1e3a5f'}}}}}</script>
+</head>
+<body class="bg-neutral-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-white border-b border-neutral-200">
+    <div class="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            </div>
+            <h1 class="text-lg font-bold text-neutral-900">Reverb Testing Dashboard</h1>
+            <span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium">Broadcast + Listen</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/reverb-broadcaster.html" class="text-xs text-neutral-600 hover:text-brand-600 font-medium">Broadcaster</a>
+            <a href="/reverb-listener.html" class="text-xs text-neutral-600 hover:text-brand-600 font-medium ml-3">Listener</a>
+        </div>
+    </div>
+</header>
+
+<!-- Live Stats Bar -->
+<div class="bg-white border-b border-neutral-200">
+    <div class="max-w-[1400px] mx-auto px-4 py-2 flex items-center gap-6 text-xs">
+        <div class="flex items-center gap-1.5">
+            <span class="text-neutral-500">Sent:</span>
+            <span id="statSent" class="font-bold text-brand-700">0</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <span class="text-neutral-500">Received:</span>
+            <span id="statRecv" class="font-bold text-green-700">0</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <span class="text-neutral-500">Failed:</span>
+            <span id="statFail" class="font-bold text-red-700">0</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <span class="text-neutral-500">Connection:</span>
+            <span id="statConn" class="font-bold text-red-600">Offline</span>
+        </div>
+        <div class="ml-auto flex items-center gap-1.5">
+            <span class="text-neutral-500">Session started:</span>
+            <span id="statTime" class="font-medium text-neutral-700"></span>
+        </div>
+    </div>
+</div>
+
+<main class="max-w-[1400px] mx-auto px-4 py-5">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <!-- LEFT: Broadcaster -->
+        <div class="space-y-4">
+            <div class="bg-white rounded-xl border border-neutral-200 p-5">
+                <h2 class="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Broadcaster
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Server URL</label>
+                        <input id="sUrl" value="http://localhost:8000" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">App Key</label>
+                        <input id="sKey" placeholder="app key" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">App Secret</label>
+                        <input id="sSecret" type="password" placeholder="app secret" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Channel</label>
+                        <input id="sChan" value="orders" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Event Name</label>
+                        <input id="sEvt" value="order.placed" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Payload (JSON)</label>
+                        <textarea id="sPayload" rows="4" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-brand-500 resize-y">{
+  "order_id": 42,
+  "message": "dashboard test"
+}</textarea>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <button id="sendBtn" class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Send
+                    </button>
+                    <button id="tplBtn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-lg transition">🛒 Template</button>
+                </div>
+                <div id="sResult" class="hidden rounded-lg border p-3 mt-3 font-mono text-xs whitespace-pre-wrap"></div>
+            </div>
+
+            <!-- Send History -->
+            <div class="bg-white rounded-xl border border-neutral-200 p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-neutral-900">Send History</h3>
+                    <button id="clearSendBtn" class="text-xs text-neutral-500 hover:text-red-500">Clear</button>
+                </div>
+                <div id="sendHist" class="space-y-1 max-h-48 overflow-y-auto">
+                    <p class="text-xs text-neutral-400 text-center py-3">—</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Listener -->
+        <div class="space-y-4">
+            <div class="bg-white rounded-xl border border-neutral-200 p-5">
+                <h2 class="text-sm font-semibold text-neutral-900 mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M5.636 18.364a9 9 0 010-12.728M8.464 15.536a5 5 0 010-7.072"/></svg>
+                    Listener
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">App Key</label>
+                        <input id="lKey" placeholder="app key" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Host</label>
+                        <input id="lHost" value="localhost" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Port</label>
+                        <input id="lPort" value="8080" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Channel</label>
+                        <input id="lChan" value="orders" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Sanctum Token <span class="text-neutral-400">(private channels)</span></label>
+                        <input id="lToken" type="password" placeholder="Bearer token" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 mt-4 flex-wrap">
+                    <button id="connBtn" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition">Connect</button>
+                    <button id="discBtn" disabled class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition disabled:opacity-40">Disconnect</button>
+                    <button id="clearEvtBtn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-3 py-2.5 rounded-lg transition">Clear</button>
+                    <span id="lStatus" class="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>Disconnected
+                    </span>
+                </div>
+            </div>
+
+            <!-- Token Generator -->
+            <details class="bg-white rounded-xl border border-neutral-200">
+                <summary class="p-4 cursor-pointer text-sm font-semibold text-neutral-700 hover:text-neutral-900">🔑 Token Generator</summary>
+                <div class="px-5 pb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Email</label>
+                        <input id="authEmail" placeholder="you@example.com" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-neutral-500 mb-1">Password</label>
+                        <input id="authPass" type="password" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button id="getTokenBtn" class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">Get Token</button>
+                        <button id="copyTokenBtn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-3 py-2 rounded-lg transition">Copy</button>
+                    </div>
+                </div>
+                <p id="tokenMsg" class="px-5 pb-3 text-xs text-neutral-500"></p>
+            </details>
+
+            <!-- Live Events -->
+            <div class="bg-white rounded-xl border border-neutral-200 p-5">
+                <h3 class="text-sm font-semibold text-neutral-900 mb-3">Received Events</h3>
+                <div id="events" class="space-y-2 max-h-[420px] overflow-y-auto">
+                    <p class="text-xs text-neutral-400 text-center py-6">Connect to start receiving events</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let socket=null, socketId=null, stats={sent:0,recv:0,fail:0};
+
+$('statTime').textContent = new Date().toLocaleTimeString();
+
+// Persist / restore
+const SK = ['sUrl','sKey','sSecret','sChan','sEvt'];
+const LK = ['lKey','lHost','lPort','lChan','lToken','authEmail'];
+SK.forEach(k=>{const v=localStorage.getItem('d-'+k);if(v)$(k).value=v});
+LK.forEach(k=>{const v=localStorage.getItem('d-'+k);if(v&&$(k))$(k).value=v});
+
+function updStats(){$('statSent').textContent=stats.sent;$('statRecv').textContent=stats.recv;$('statFail').textContent=stats.fail;}
+
+function showSResult(ok,txt){
+    const r=$('sResult');
+    r.className=ok?'rounded-lg border border-green-200 bg-green-50 text-green-800 p-3 mt-3 font-mono text-xs whitespace-pre-wrap':'rounded-lg border border-red-200 bg-red-50 text-red-800 p-3 mt-3 font-mono text-xs whitespace-pre-wrap';
+    r.textContent=txt;
+}
+
+function addSendHist(ch,ev,ok){
+    const h=$('sendHist');if(!stats.sent&&!stats.fail) h.innerHTML='';
+    const d=document.createElement('div');
+    d.className='flex items-center justify-between py-1.5 border-b border-neutral-100';
+    d.innerHTML=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${ok?'bg-green-500':'bg-red-500'}"></span><code class="text-xs">${ev}</code><span class="text-xs text-neutral-400">→ ${ch}</span></div><span class="text-xs text-neutral-400">${new Date().toLocaleTimeString()}</span>`;
+    h.prepend(d);
+}
+
+function setLStatus(on,txt){
+    $('lStatus').className=`ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${on?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`;
+    $('lStatus').innerHTML=`<span class="w-2 h-2 rounded-full ${on?'bg-green-500':'bg-red-500'}"></span>${txt}`;
+    $('statConn').textContent=on?'Online':'Offline';
+    $('statConn').className=`font-bold ${on?'text-green-600':'text-red-600'}`;
+}
+
+function addEvt(type,ch,name,data){
+    const e=$('events');if(!stats.recv) e.innerHTML='';
+    const sys=type==='system';
+    const d=document.createElement('div');
+    d.className=`rounded-lg border p-3 ${sys?'border-neutral-200 bg-neutral-50':'border-brand-200 bg-brand-50'}`;
+    d.innerHTML=`
+        <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-2">
+                ${sys?'<span class="text-[10px] font-bold text-neutral-500 bg-neutral-200 px-1.5 py-0.5 rounded">SYS</span>':'<span class="text-[10px] font-bold text-brand-700 bg-brand-100 px-1.5 py-0.5 rounded">EVT</span>'}
+                <code class="text-xs font-semibold">${name}</code>
+                <span class="text-xs bg-neutral-200 text-neutral-600 px-1.5 py-0.5 rounded font-mono">${ch}</span>
+            </div>
+            <span class="text-[10px] text-neutral-400">${new Date().toLocaleTimeString()}</span>
+        </div>
+        <pre class="text-xs bg-white rounded border border-neutral-200 p-2 overflow-x-auto">${JSON.stringify(data,null,2)}</pre>
+    `;
+    e.prepend(d);
+    if(!sys){stats.recv++;updStats();}
+}
+
+// Broadcaster
+$('tplBtn').onclick=()=>{
+    $('sEvt').value='product.added_to_cart';
+    $('sPayload').value=JSON.stringify({product_id:Math.floor(Math.random()*900)+100,qty:1,price:+(Math.random()*100).toFixed(2),ts:new Date().toISOString()},null,2);
+};
+
+$('sendBtn').onclick=async()=>{
+    const btn=$('sendBtn');btn.disabled=true;btn.textContent='Sending…';
+    try{
+        const body=JSON.stringify({channel:$('sChan').value.trim(),event_name:$('sEvt').value.trim(),data:JSON.parse($('sPayload').value)});
+        const sig=CryptoJS.HmacSHA256(body,$('sSecret').value.trim()).toString();
+        const r=await fetch($('sUrl').value.replace(/\/$/,'')+'/api/v1/events',{method:'POST',headers:{'Content-Type':'application/json','X-App-Key':$('sKey').value.trim(),'X-Signature':sig},body});
+        const d=await r.json();
+        if(!r.ok) throw new Error(JSON.stringify(d,null,2));
+        SK.forEach(k=>localStorage.setItem('d-'+k,$(k).value));
+        stats.sent++;updStats();
+        showSResult(true,`✓ Delivered — UUID: ${d.event_uuid}`);
+        addSendHist($('sChan').value.trim(),$('sEvt').value.trim(),true);
+    }catch(e){
+        stats.fail++;updStats();
+        showSResult(false,'✗ '+e.message);
+        addSendHist($('sChan').value,$('sEvt').value,false);
+    }finally{
+        btn.disabled=false;
+        btn.innerHTML='<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Send';
+    }
+};
+
+$('clearSendBtn').onclick=()=>{$('sendHist').innerHTML='<p class="text-xs text-neutral-400 text-center py-3">—</p>';};
+
+// Listener
+async function privAuth(ch){
+    const r=await fetch($('sUrl').value.replace(/\/$/,'')+'/api/v1/reverb/auth',{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json','Authorization':'Bearer '+$('lToken').value.trim(),'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({app_key:$('lKey').value.trim(),socket_id:socketId,channel_name:ch})});
+    if(!r.ok) throw new Error('Auth failed: '+(await r.text()));
+    return r.json();
+}
+
+async function sub(){
+    const ch=$('lChan').value.trim();
+    if(ch.startsWith('private-')){
+        if(!$('lToken').value.trim()) throw new Error('Sanctum token required for private channel');
+        const a=await privAuth(ch);
+        socket.send(JSON.stringify({event:'pusher:subscribe',data:{channel:ch,auth:a.auth}}));
+        addEvt('system',ch,'subscribe',{type:'private'});
+    }else{
+        socket.send(JSON.stringify({event:'pusher:subscribe',data:{channel:ch}}));
+        addEvt('system',ch,'subscribe',{type:'public'});
+    }
+}
+
+$('connBtn').onclick=()=>{
+    const ws='ws://'+$('lHost').value.trim()+':'+$('lPort').value.trim()+'/app/'+$('lKey').value.trim();
+    socket=new WebSocket(ws);$('connBtn').disabled=true;setLStatus(false,'Connecting…');
+
+    socket.onopen=()=>{setLStatus(true,'Connected');$('discBtn').disabled=false;LK.forEach(k=>$(k)&&localStorage.setItem('d-'+k,$(k).value));};
+
+    socket.onmessage=async ev=>{
+        try{
+            const m=JSON.parse(ev.data);
+            if(m.event==='pusher:connection_established'){const d=typeof m.data==='string'?JSON.parse(m.data):m.data;socketId=d.socket_id;addEvt('system','—','connected',{socket_id:socketId});await sub();return;}
+            if(m.event==='pusher_internal:subscription_succeeded'||m.event==='pusher:subscription_succeeded'){addEvt('system',m.channel||'—','subscribed',m);return;}
+            if(m.event&&!m.event.startsWith('pusher')){
+                const data=typeof m.data==='string'?(()=>{try{return JSON.parse(m.data)}catch(_){return m.data}})():m.data;
+                addEvt('event',m.channel||'unknown',m.event,data);
+            }
+        }catch(err){addEvt('system','—','error',{msg:err.message});}
+    };
+
+    socket.onclose=()=>{setLStatus(false,'Disconnected');$('connBtn').disabled=false;$('discBtn').disabled=true;};
+    socket.onerror=()=>{setLStatus(false,'Error');};
+};
+
+$('discBtn').onclick=()=>{if(socket)socket.close();};
+$('clearEvtBtn').onclick=()=>{$('events').innerHTML='<p class="text-xs text-neutral-400 text-center py-6">Connect to start receiving events</p>';stats.recv=0;updStats();};
+
+// Token
+$('getTokenBtn').onclick=async()=>{
+    try{
+        const r=await fetch($('sUrl').value.replace(/\/$/,'')+'/api/v1/auth/token',{method:'POST',headers:{'Accept':'application/json','Content-Type':'application/json'},body:JSON.stringify({email:$('authEmail').value.trim(),password:$('authPass').value,token_name:'reverb-dashboard-tool'})});
+        const d=await r.json();if(!r.ok) throw new Error(d.message||JSON.stringify(d));
+        $('lToken').value=d.token;$('tokenMsg').textContent='✓ Token generated.';
+    }catch(e){$('tokenMsg').textContent='✗ '+e.message;}
+};
+
+$('copyTokenBtn').onclick=async()=>{
+    if(!$('lToken').value.trim()){$('tokenMsg').textContent='No token';return;}
+    await navigator.clipboard.writeText($('lToken').value.trim());
+    $('tokenMsg').textContent='✓ Copied';
+};
+</script>
+</body>
+</html>
+

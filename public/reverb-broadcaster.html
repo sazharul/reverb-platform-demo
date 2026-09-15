@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Broadcaster — Reverb</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>tailwind.config={theme:{extend:{colors:{brand:{'50':'#eff6ff','100':'#dbeafe','500':'#3b82f6','600':'#2563eb','700':'#1d4ed8','900':'#1e3a5f'}}}}}</script>
+</head>
+<body class="bg-neutral-50 min-h-screen">
+
+<!-- Header -->
+<header class="bg-white border-b border-neutral-200">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <h1 class="text-lg font-bold text-neutral-900">Event Broadcaster</h1>
+            <span class="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-medium">Testing Tool</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/reverb-listener.html" class="text-xs text-neutral-600 hover:text-brand-600 font-medium">Listener →</a>
+            <a href="/reverb-dashboard.html" class="text-xs text-neutral-600 hover:text-brand-600 font-medium ml-3">Dashboard →</a>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 py-6 space-y-5">
+
+    <!-- Connection Settings -->
+    <div class="bg-white rounded-xl border border-neutral-200 p-5">
+        <h2 class="text-sm font-semibold text-neutral-900 mb-4">Connection Settings</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Server URL</label>
+                <input id="serverUrl" value="http://localhost:8000" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">App Key</label>
+                <input id="appKey" placeholder="Your app key" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">App Secret <span class="text-red-400">(backend only in production)</span></label>
+                <input id="appSecret" type="password" placeholder="Your app secret" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none font-mono">
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Composer -->
+    <div class="bg-white rounded-xl border border-neutral-200 p-5">
+        <h2 class="text-sm font-semibold text-neutral-900 mb-4">Compose Event</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Channel</label>
+                <input id="channel" value="orders" placeholder="e.g. orders, private-orders, presence-chat" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 outline-none">
+                <p class="text-xs text-neutral-400 mt-1">Use <code class="bg-neutral-100 px-1 rounded">private-</code> prefix for private channels</p>
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Event Name</label>
+                <input id="eventName" value="order.placed" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 outline-none">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-neutral-500 mb-1">Payload (JSON)</label>
+                <textarea id="payload" rows="5" class="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand-500 outline-none resize-y">{
+  "order_id": 42,
+  "total": 1599,
+  "message": "Test event from broadcaster"
+}</textarea>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 mt-4">
+            <button id="sendBtn" class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Send Event
+            </button>
+            <button id="templateBtn" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-medium px-4 py-2.5 rounded-lg transition">🛒 Product Template</button>
+            <span id="counter" class="text-xs text-neutral-400 ml-auto">0 events sent</span>
+        </div>
+    </div>
+
+    <!-- Result -->
+    <div id="result" class="hidden rounded-xl border p-4 font-mono text-xs whitespace-pre-wrap"></div>
+
+    <!-- Send History -->
+    <div class="bg-white rounded-xl border border-neutral-200 p-5">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-neutral-900">Send History</h2>
+            <button id="clearBtn" class="text-xs text-neutral-500 hover:text-red-500">Clear</button>
+        </div>
+        <div id="history" class="space-y-2 max-h-72 overflow-y-auto">
+            <p class="text-xs text-neutral-400 text-center py-4">No events sent yet</p>
+        </div>
+    </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const KEYS = ['serverUrl','appKey','appSecret','channel','eventName'];
+let sent = 0;
+
+KEYS.forEach(k => { const v=localStorage.getItem('b-'+k); if(v) $(k).value=v; });
+
+function showResult(ok,txt) {
+    const r=$('result');
+    r.className = ok
+        ? 'rounded-xl border border-green-200 bg-green-50 text-green-800 p-4 font-mono text-xs whitespace-pre-wrap'
+        : 'rounded-xl border border-red-200 bg-red-50 text-red-800 p-4 font-mono text-xs whitespace-pre-wrap';
+    r.textContent = txt;
+}
+
+function addHist(ch, ev, ok) {
+    const h=$('history');
+    if(!sent) h.innerHTML='';
+    const d=document.createElement('div');
+    d.className='flex items-center justify-between py-2 border-b border-neutral-100 last:border-0';
+    d.innerHTML=`<div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full ${ok?'bg-green-500':'bg-red-500'}"></span><code class="text-xs">${ev}</code><span class="text-xs text-neutral-400">→ ${ch}</span></div><span class="text-xs text-neutral-400">${new Date().toLocaleTimeString()}</span>`;
+    h.prepend(d);
+    sent++;
+    $('counter').textContent=sent+' event'+(sent>1?'s':'')+' sent';
+}
+
+$('templateBtn').onclick = () => {
+    $('eventName').value='product.added_to_cart';
+    $('payload').value=JSON.stringify({product_id:Math.floor(Math.random()*900)+100,qty:1,price:+(Math.random()*100).toFixed(2),timestamp:new Date().toISOString()},null,2);
+};
+
+$('sendBtn').onclick = async () => {
+    const btn=$('sendBtn'); btn.disabled=true; btn.textContent='Sending…';
+    try {
+        const body=JSON.stringify({channel:$('channel').value.trim(),event_name:$('eventName').value.trim(),data:JSON.parse($('payload').value)});
+        const sig=CryptoJS.HmacSHA256(body,$('appSecret').value.trim()).toString();
+        const r=await fetch($('serverUrl').value.replace(/\/$/,'')+'/api/v1/events',{method:'POST',headers:{'Content-Type':'application/json','X-App-Key':$('appKey').value.trim(),'X-Signature':sig},body});
+        const d=await r.json();
+        if(!r.ok) throw new Error(JSON.stringify(d,null,2));
+        KEYS.forEach(k=>localStorage.setItem('b-'+k,$(k).value));
+        showResult(true,`✓ Event delivered\nUUID: ${d.event_uuid}\nChannel: ${$('channel').value.trim()}`);
+        addHist($('channel').value.trim(),$('eventName').value.trim(),true);
+    } catch(e) {
+        showResult(false,'✗ Failed\n'+e.message);
+        addHist($('channel').value,$('eventName').value,false);
+    } finally {
+        btn.disabled=false;
+        btn.innerHTML='<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Send Event';
+    }
+};
+
+$('clearBtn').onclick = () => {
+    $('history').innerHTML='<p class="text-xs text-neutral-400 text-center py-4">No events sent yet</p>';
+    sent=0; $('counter').textContent='0 events sent';
+};
+</script>
+</body>
+</html>
+
