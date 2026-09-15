@@ -1,8 +1,10 @@
 # PulseWire — Real-time Event Platform Demo
 
-A self-hosted, multi-tenant **Laravel Reverb** platform demo — like Pusher, but on your own infrastructure. Manage Reverb apps, channels, signed event APIs, subscription plans, and event logs from a web dashboard.
+A self-hosted, multi-tenant **Laravel Reverb** platform demo — like Pusher, but on your own infrastructure. Rebranded as **PulseWire**.
 
-> **Disclaimer:** This is a portfolio recreation for code review. It is not affiliated with any production deployment. Real-time chat on [pulsewire.demo](https://pulsewire.demo/) uses a similar Reverb-based architecture.
+> **Portfolio demonstration only.** This repository is an independent showcase for recruiters and engineers.
+> It is an **original portfolio codebase** demonstrating real-time event platform patterns — **not**
+> the source code of any client, employer, or live product. See [DISCLAIMER.md](DISCLAIMER.md).
 
 ## Features
 
